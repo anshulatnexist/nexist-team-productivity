@@ -1,1 +1,621 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexist Team Productivity</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --color-bg: #f9f9f7;
+    --color-panel: #fcfcfb;
+    --color-fg: #0b0b0b;
+    --color-fg-muted: #52514e;
+    --color-axis-muted: #898781;
+    --color-border-line: rgba(11,11,11,0.10);
+    --color-ok: #0ca30c;
+    --color-warn: #fab219;
+    --color-bad: #d03b3b;
+    --cds-chart-axis: #c3c2b7;
+    --cds-chart-grid: #e1e0d9;
+    --cds-chart-reference: #c3c2b7;
+    --cds-chart-muted: #898781;
+    --cds-chart-status-critical: #d03b3b;
+    --cds-surface-popover: #fcfcfb;
+    --cds-border: rgba(11,11,11,0.10);
+    --cds-shadow-popover: 0 4px 16px rgba(11,11,11,0.12);
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+    --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6; --series-8: #e34948;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 20px; --cds-pad-xl: 32px;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+    --cds-radius: 0.75rem;
+    --cds-font-size-caption: 0.75rem; --cds-font-size-body: 0.875rem; --cds-font-size-heading: 1.0625rem; --cds-font-size-title: 1.75rem;
+    --cds-font-weight-medium: 500;
+    --cds-dur-slow: 320ms;
+    --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-anthropic-serif: ui-serif, Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-bg: #0d0d0d;
+      --color-panel: #1a1a19;
+      --color-fg: #f0efec;
+      --color-fg-muted: #c3c2b7;
+      --color-axis-muted: #898781;
+      --color-border-line: rgba(255,255,255,0.10);
+      --color-ok: #0ca30c;
+      --color-warn: #fab219;
+      --color-bad: #e66767;
+      --cds-chart-axis: #383835;
+      --cds-chart-grid: #2c2c2a;
+      --cds-chart-reference: #383835;
+      --cds-surface-popover: #1a1a19;
+      --cds-border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+      --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-bg: #0d0d0d; --color-panel: #1a1a19; --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+    --color-border-line: rgba(255,255,255,0.10);
+    --color-bad: #e66767;
+    --cds-chart-axis: #383835; --cds-chart-grid: #2c2c2a; --cds-chart-reference: #383835;
+    --cds-surface-popover: #1a1a19; --cds-border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+  #dash-root { max-width: 72rem; margin: 0 auto; padding: clamp(16px, 4vw, 32px); }
+  .lx-head { margin-bottom: var(--cds-gap-lg); display: flex; justify-content: space-between; align-items: flex-start; gap: var(--cds-gap-md); flex-wrap: wrap; }
+  .lx-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 4px; }
+  .lx-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin: 0; }
+  .lx-updated { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); white-space: nowrap; }
+  .lx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-lg); }
+  .lx-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-md); margin-bottom: var(--cds-gap-lg); }
+  .lx-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); }
+  .lx-card h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 2px; }
+  .lx-card .lx-note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin: 0 0 var(--cds-pad-md); }
+  .lx-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: 0 0 6px; }
+  .lx-kpi-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; }
+  .lx-kpi-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-top: 4px; }
+  table.lx-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  table.lx-table th, table.lx-table td { text-align: left; padding: var(--cds-pad-sm) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); font-size: var(--cds-font-size-body); }
+  table.lx-table th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+  table.lx-table tbody tr:last-child td { border-bottom: none; }
+  .lx-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: var(--cds-font-size-caption); background: var(--color-bg); border: 1px solid var(--color-border-line); color: var(--color-fg-muted); white-space: nowrap; }
+  .lx-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 7rem; }
+  .lx-bar-track { flex: 1; height: 6px; border-radius: 999px; background: var(--color-bg); overflow: hidden; }
+  .lx-bar-fill { height: 100%; border-radius: 999px; }
+  .lx-chart-box { min-height: 220px; position: relative; }
+  .lx-legend { display: flex; gap: var(--cds-gap-md); flex-wrap: wrap; margin-top: 6px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .lx-legend span.sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .lx-foot { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.6; }
+  .lx-two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--cds-gap-md); }
+  @media (max-width: 640px) { .lx-two-col { grid-template-columns: 1fr; } }
+  .lx-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--cds-gap-sm) 0 0; }
+  .lx-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 8px; border-radius: 999px; border: 1px solid var(--color-border-line); background: var(--color-panel); font-size: var(--cds-font-size-caption); cursor: pointer; user-select: none; transition: opacity 120ms, border-color 120ms; color: var(--color-fg); }
+  .lx-pill .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .lx-pill.off { opacity: .4; }
+  .lx-pill.off .dot { background: var(--color-fg-muted) !important; }
+  .lx-pill-all { font-weight: var(--cds-font-weight-medium); border-style: dashed; }
+  .lx-pill-add-wrap { position: relative; display: inline-flex; }
+  .lx-pill-add { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border-radius: 999px; border: 1px dashed var(--color-border-line); background: var(--color-panel); font-size: 16px; line-height: 1; cursor: pointer; color: var(--color-fg-muted); transition: color 120ms, border-color 120ms; }
+  .lx-pill-add:hover { color: var(--color-fg); border-color: var(--color-fg-muted); }
+  .lx-pill-add[disabled] { opacity: .35; cursor: default; pointer-events: none; }
+  .lx-add-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; width: 220px; background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: 10px; box-shadow: 0 6px 20px rgba(11,11,11,0.12); padding: 8px; }
+  .lx-add-pop input { width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--color-border-line); background: var(--color-bg); color: var(--color-fg); font-size: var(--cds-font-size-caption); outline: none; }
+  .lx-add-pop input:focus { border-color: var(--color-fg-muted); }
+  .lx-add-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 180px; overflow-y: auto; }
+  .lx-add-list li { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: var(--cds-font-size-caption); color: var(--color-fg); }
+  .lx-add-list li:hover, .lx-add-list li.active { background: var(--color-bg); }
+  .lx-add-list .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .lx-add-empty { padding: 6px 8px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+</style>
+</head>
+<body>
+<div id="dash-root">
+
+<div class="lx-head">
+  <div>
+    <h1 class="lx-title">Nexist Team Productivity</h1>
+    <p class="lx-sub" id="lx-takeaway">Loading summary…</p>
+    <div class="lx-filters" id="lx-filters" aria-label="Filter by employee"></div>
+  </div>
+  <div class="lx-updated" id="lx-updated">Checking for live data…</div>
+</div>
+
+<div class="lx-kpis">
+  <div class="lx-card">
+    <p class="lx-kpi-label">Active hours (2 wks)</p>
+    <div class="lx-kpi-value" data-field="active_hours">—</div>
+    <p class="lx-kpi-sub" id="lx-kpi-active-sub">across 7 people</p>
+  </div>
+  <div class="lx-card">
+    <p class="lx-kpi-label">Avg active %</p>
+    <div class="lx-kpi-value" data-field="avg_active_pct">—</div>
+    <p class="lx-kpi-sub">of monitored time</p>
+  </div>
+  <div class="lx-card">
+    <p class="lx-kpi-label">Overtime (2 wks)</p>
+    <div class="lx-kpi-value" data-field="overtime_hours">—</div>
+    <p class="lx-kpi-sub">hours logged</p>
+  </div>
+  <div class="lx-card">
+    <p class="lx-kpi-label">Below 60% active</p>
+    <div class="lx-kpi-value" data-field="below_60_count">—</div>
+    <p class="lx-kpi-sub">people to check in on</p>
+  </div>
+  <div class="lx-card">
+    <p class="lx-kpi-label">Off-work days (2 wks)</p>
+    <div class="lx-kpi-value" data-field="off_days_total">—</div>
+    <p class="lx-kpi-sub">total, all staff</p>
+  </div>
+</div>
+
+<div class="lx-card" style="margin-bottom: var(--cds-gap-lg);">
+  <h3>By employee — last 2 weeks (10/12–10/25)</h3>
+  <p class="lx-note">Active % = active time ÷ (active + idle) time WorkTime recorded. Sorted highest active % first.</p>
+  <div style="overflow-x:auto;">
+  <table class="lx-table" id="lx-emp-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Team</th>
+        <th>Active</th>
+        <th>Idle</th>
+        <th>Active %</th>
+        <th>Overtime</th>
+        <th>Off days</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="lx-grid">
+  <div class="lx-card">
+    <h3>By team — avg active %</h3>
+    <p class="lx-note">Nepo Team (India) vs. Nexist AU / Tech &amp; Ops, last 2 weeks.</p>
+    <div class="lx-chart-box" id="lx-team-chart"></div>
+  </div>
+  <div class="lx-card">
+    <h3>Daily active % trend</h3>
+    <p class="lx-note">September 2026 sample (richest daily log WorkTime had on this plan). Each line is one employee.</p>
+    <div class="lx-chart-box" id="lx-trend-chart"></div>
+    <div class="lx-legend" id="lx-trend-legend"></div>
+  </div>
+</div>
+
+<div class="lx-two-col" style="margin-bottom: var(--cds-gap-lg);">
+  <div class="lx-card">
+    <h3>Top apps &amp; websites — company-wide</h3>
+    <p class="lx-note">September 2026, all monitored computers combined.</p>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--cds-gap-md);">
+      <div>
+        <p class="lx-kpi-label">Apps</p>
+        <div class="lx-chart-box" id="lx-apps-chart" style="min-height:160px;"></div>
+      </div>
+      <div>
+        <p class="lx-kpi-label">Websites</p>
+        <div class="lx-chart-box" id="lx-sites-chart" style="min-height:160px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="lx-card">
+    <h3>Punctuality sample — Amandeep Kaur</h3>
+    <p class="lx-note">Login times vs. the Nepo Team India 6:30am IST shift start, Sept 2026. One employee only — a full export covers everyone.</p>
+    <div style="overflow-x:auto; max-height: 240px; overflow-y:auto;">
+    <table class="lx-table" id="lx-login-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Event</th>
+          <th>Time</th>
+          <th>vs. 6:30am</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div class="lx-card lx-foot">
+  <p style="margin:0 0 6px;"><strong>Where this data comes from.</strong> WorkTime (cloud.worktime.com) doesn't offer a public API on Nexist's current "Basic" plan — only on-screen reports and CSV/HTML/PDF exports. These numbers were pulled from WorkTime's Attendance, Internet and App/doc reports via a signed-in browser session on 27 Oct 2026.</p>
+  <p style="margin:0 0 6px;"><strong>How this page stays current.</strong> On every load, this page tries to pull fresh rows from a <a href="https://docs.google.com/spreadsheets/d/10c89SwrE9mZb59TJ9N5TW5DbcqOarWKLPHy9myuFOVU/edit" target="_blank" rel="noopener">Google Sheet</a> — so updating the Sheet (pasting in a new WorkTime export) updates nexist.cloud with no re-upload needed. The badge at the top says whether it loaded live or fell back to the snapshot baked into this file on 27 Oct 2026. If it's stuck on the snapshot, check that the Sheet is still shared as "Anyone with the link — Viewer."</p>
+  <p style="margin:0;"><strong>Note on "productivity".</strong> The Basic plan doesn't include WorkTime's app/site productivity categorisation, so there's no vendor-classified "productive vs. unproductive" score here. Active % (time actively at the keyboard/mouse vs. idle) is used as the closest available proxy — upgrading the WorkTime plan would unlock true productivity scoring if that's wanted later.</p>
+</div>
+
+</div>
+
+<script id="lx-data" type="application/json">{"employee_summary": [{"employee": "Amandeep Kaur", "team": "Nepo Team (India)", "total_min": "3493", "active_min": "3132", "active_avg_min_per_day": "313", "idle_min": "360", "idle_avg_min_per_day": "36", "overtime_min": "0", "overtime_avg_min_per_day": "0", "off_days": "2", "computer": "DELL-Amandeep Kaur", "active_pct": "89.7"}, {"employee": "Arpit Tyagi", "team": "Nepo Team (India)", "total_min": "3926", "active_min": "1738", "active_avg_min_per_day": "173", "idle_min": "2188", "idle_avg_min_per_day": "218", "overtime_min": "86", "overtime_avg_min_per_day": "8", "off_days": "2", "computer": "DELL-Arpit Tyagi", "active_pct": "44.3"}, {"employee": "Chirag Aggarwal", "team": "Nepo Team (India)", "total_min": "2675", "active_min": "1537", "active_avg_min_per_day": "153", "idle_min": "1138", "idle_avg_min_per_day": "113", "overtime_min": "0", "overtime_avg_min_per_day": "0", "off_days": "3", "computer": "DESKTOP-TGN5NVT", "active_pct": "57.5"}, {"employee": "Divyanshu Pandey", "team": "Nepo Team (India)", "total_min": "3684", "active_min": "3466", "active_avg_min_per_day": "346", "idle_min": "218", "idle_avg_min_per_day": "21", "overtime_min": "0", "overtime_avg_min_per_day": "0", "off_days": "1", "computer": "DESKTOP-GAF10D2", "active_pct": "94.1"}, {"employee": "Monika Singh", "team": "Nepo Team (India)", "total_min": "4197", "active_min": "2940", "active_avg_min_per_day": "294", "idle_min": "1256", "idle_avg_min_per_day": "125", "overtime_min": "90", "overtime_avg_min_per_day": "9", "off_days": "1", "computer": "DELL-Monika Singh", "active_pct": "70.1"}, {"employee": "Seelan Govender", "team": "Nexist AU / Tech & Ops", "total_min": "4157", "active_min": "3257", "active_avg_min_per_day": "325", "idle_min": "899", "idle_avg_min_per_day": "89", "overtime_min": "0", "overtime_avg_min_per_day": "0", "off_days": "0", "computer": "Parrham's MacBook Pro", "active_pct": "78.4"}, {"employee": "Swetha", "team": "Nexist AU / Tech & Ops", "total_min": "2625", "active_min": "2023", "active_avg_min_per_day": "168", "idle_min": "601", "idle_avg_min_per_day": "50", "overtime_min": "98", "overtime_avg_min_per_day": "9", "off_days": "0", "computer": "Swetha's MacBook Pro", "active_pct": "77.1"}], "daily_activity": [{"date": "9/1/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "356", "idle_min": "70", "active_pct": "83.6"}, {"date": "9/1/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "291", "idle_min": "215", "active_pct": "57.5"}, {"date": "9/1/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "330", "idle_min": "106", "active_pct": "75.7"}, {"date": "9/2/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "392", "idle_min": "34", "active_pct": "92.0"}, {"date": "9/2/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "237", "idle_min": "253", "active_pct": "48.4"}, {"date": "9/2/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "290", "idle_min": "117", "active_pct": "71.3"}, {"date": "9/3/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "378", "idle_min": "45", "active_pct": "89.4"}, {"date": "9/3/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "247", "idle_min": "242", "active_pct": "50.5"}, {"date": "9/3/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "285", "idle_min": "142", "active_pct": "66.7"}, {"date": "9/4/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "352", "idle_min": "27", "active_pct": "92.9"}, {"date": "9/4/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "186", "idle_min": "306", "active_pct": "37.8"}, {"date": "9/4/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "328", "idle_min": "86", "active_pct": "79.2"}, {"date": "9/7/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "414", "idle_min": "47", "active_pct": "89.8"}, {"date": "9/7/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "296", "idle_min": "207", "active_pct": "58.8"}, {"date": "9/7/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "382", "idle_min": "76", "active_pct": "83.4"}, {"date": "9/7/2026", "employee": "Swetha", "team": "Nexist AU / Tech & Ops", "active_min": "36", "idle_min": "0", "active_pct": "100.0"}, {"date": "9/8/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "382", "idle_min": "39", "active_pct": "90.7"}, {"date": "9/8/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "248", "idle_min": "249", "active_pct": "49.9"}, {"date": "9/8/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "353", "idle_min": "55", "active_pct": "86.5"}, {"date": "9/9/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "399", "idle_min": "36", "active_pct": "91.7"}, {"date": "9/9/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "257", "idle_min": "239", "active_pct": "51.8"}, {"date": "9/9/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "376", "idle_min": "50", "active_pct": "88.3"}, {"date": "9/10/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "342", "idle_min": "77", "active_pct": "81.6"}, {"date": "9/10/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "245", "idle_min": "248", "active_pct": "49.7"}, {"date": "9/10/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "343", "idle_min": "60", "active_pct": "85.1"}, {"date": "9/15/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "399", "idle_min": "22", "active_pct": "94.8"}, {"date": "9/15/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "268", "idle_min": "215", "active_pct": "55.5"}, {"date": "9/15/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "343", "idle_min": "60", "active_pct": "85.1"}, {"date": "9/16/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "374", "idle_min": "34", "active_pct": "91.7"}, {"date": "9/16/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "198", "idle_min": "287", "active_pct": "40.8"}, {"date": "9/16/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "284", "idle_min": "98", "active_pct": "74.3"}, {"date": "9/16/2026", "employee": "Swetha", "team": "Nexist AU / Tech & Ops", "active_min": "49", "idle_min": "8", "active_pct": "86.0"}, {"date": "9/17/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "399", "idle_min": "33", "active_pct": "92.4"}, {"date": "9/17/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "230", "idle_min": "253", "active_pct": "47.6"}, {"date": "9/17/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "355", "idle_min": "89", "active_pct": "80.0"}, {"date": "9/17/2026", "employee": "Swetha", "team": "Nexist AU / Tech & Ops", "active_min": "160", "idle_min": "62", "active_pct": "72.1"}, {"date": "9/18/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "385", "idle_min": "24", "active_pct": "94.1"}, {"date": "9/18/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "138", "idle_min": "352", "active_pct": "28.2"}, {"date": "9/18/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "310", "idle_min": "99", "active_pct": "75.8"}, {"date": "9/18/2026", "employee": "Swetha", "team": "Nexist AU / Tech & Ops", "active_min": "107", "idle_min": "90", "active_pct": "54.3"}, {"date": "9/21/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "343", "idle_min": "99", "active_pct": "77.6"}, {"date": "9/21/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "191", "idle_min": "302", "active_pct": "38.7"}, {"date": "9/21/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "343", "idle_min": "84", "active_pct": "80.3"}, {"date": "9/22/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "362", "idle_min": "51", "active_pct": "87.7"}, {"date": "9/22/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "354", "idle_min": "61", "active_pct": "85.3"}, {"date": "9/23/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "354", "idle_min": "40", "active_pct": "89.8"}, {"date": "9/23/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "269", "idle_min": "233", "active_pct": "53.6"}, {"date": "9/23/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "309", "idle_min": "57", "active_pct": "84.4"}, {"date": "9/24/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "325", "idle_min": "63", "active_pct": "83.8"}, {"date": "9/24/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "146", "idle_min": "172", "active_pct": "45.9"}, {"date": "9/24/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "323", "idle_min": "88", "active_pct": "78.6"}, {"date": "9/25/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "318", "idle_min": "87", "active_pct": "78.5"}, {"date": "9/25/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "250", "idle_min": "143", "active_pct": "63.6"}, {"date": "9/30/2026", "employee": "Amandeep Kaur", "team": "Nepo Team (India)", "active_min": "294", "idle_min": "106", "active_pct": "73.5"}, {"date": "9/30/2026", "employee": "Arpit Tyagi", "team": "Nepo Team (India)", "active_min": "167", "idle_min": "330", "active_pct": "33.6"}, {"date": "9/30/2026", "employee": "Monika Singh", "team": "Nepo Team (India)", "active_min": "291", "idle_min": "82", "active_pct": "78.0"}], "company_apps": [{"app": "Google Chrome", "active_min": "16023"}, {"app": "Microsoft Excel", "active_min": "2948"}, {"app": "Windows Explorer", "active_min": "303"}, {"app": "Google Chrome (2)", "active_min": "267"}, {"app": "Microsoft Edge", "active_min": "144"}, {"app": "Calculator", "active_min": "137"}, {"app": "Edportal LMS App", "active_min": "57"}], "company_websites": [{"website": "go.xero.com", "active_min": "8321"}, {"website": "mail.google.com", "active_min": "4383"}, {"website": "reporting.xero.com", "active_min": "726"}, {"website": "payroll.xero.com", "active_min": "396"}, {"website": "meet.google.com", "active_min": "391"}, {"website": "docs.google.com", "active_min": "382"}, {"website": "chatgpt.com", "active_min": "280"}], "login_events": [{"employee": "Amandeep Kaur", "date": "9/1/2026", "event": "Logout", "time": "2:56:00 pm", "minutes_vs_630am_shift_start": "", "id": "1"}, {"employee": "Amandeep Kaur", "date": "9/1/2026", "event": "Login", "time": "6:29:54 am", "minutes_vs_630am_shift_start": "-0.1", "id": "2"}, {"employee": "Amandeep Kaur", "date": "9/2/2026", "event": "Login", "time": "6:34:23 am", "minutes_vs_630am_shift_start": "4.4", "id": "3"}, {"employee": "Amandeep Kaur", "date": "9/2/2026", "event": "Logout", "time": "2:54:20 pm", "minutes_vs_630am_shift_start": "", "id": "4"}, {"employee": "Amandeep Kaur", "date": "9/3/2026", "event": "Login", "time": "6:45:30 am", "minutes_vs_630am_shift_start": "15.5", "id": "5"}, {"employee": "Amandeep Kaur", "date": "9/3/2026", "event": "Logout", "time": "2:52:56 pm", "minutes_vs_630am_shift_start": "", "id": "6"}, {"employee": "Amandeep Kaur", "date": "9/4/2026", "event": "Login", "time": "6:31:39 am", "minutes_vs_630am_shift_start": "1.6", "id": "7"}, {"employee": "Amandeep Kaur", "date": "9/7/2026", "event": "Login", "time": "6:37:54 am", "minutes_vs_630am_shift_start": "7.9", "id": "8"}, {"employee": "Amandeep Kaur", "date": "9/7/2026", "event": "Logout", "time": "2:56:32 pm", "minutes_vs_630am_shift_start": "", "id": "9"}, {"employee": "Amandeep Kaur", "date": "9/8/2026", "event": "Login", "time": "6:40:20 am", "minutes_vs_630am_shift_start": "10.3", "id": "10"}, {"employee": "Amandeep Kaur", "date": "9/8/2026", "event": "Logout", "time": "2:57:11 pm", "minutes_vs_630am_shift_start": "", "id": "11"}, {"employee": "Amandeep Kaur", "date": "9/9/2026", "event": "Login", "time": "6:40:05 am", "minutes_vs_630am_shift_start": "10.1", "id": "12"}, {"employee": "Amandeep Kaur", "date": "9/9/2026", "event": "Logout", "time": "2:59:36 pm", "minutes_vs_630am_shift_start": "", "id": "13"}, {"employee": "Amandeep Kaur", "date": "9/10/2026", "event": "Login", "time": "6:45:38 am", "minutes_vs_630am_shift_start": "15.6", "id": "14"}, {"employee": "Amandeep Kaur", "date": "9/10/2026", "event": "Logout", "time": "2:55:57 pm", "minutes_vs_630am_shift_start": "", "id": "15"}, {"employee": "Amandeep Kaur", "date": "9/11/2026", "event": "Login", "time": "6:41:35 am", "minutes_vs_630am_shift_start": "11.6", "id": "16"}, {"employee": "Amandeep Kaur", "date": "9/11/2026", "event": "Logout", "time": "2:59:40 pm", "minutes_vs_630am_shift_start": "", "id": "17"}, {"employee": "Amandeep Kaur", "date": "9/14/2026", "event": "Login", "time": "6:43:56 am", "minutes_vs_630am_shift_start": "13.9", "id": "18"}, {"employee": "Amandeep Kaur", "date": "9/14/2026", "event": "Logout", "time": "9:51:24 am", "minutes_vs_630am_shift_start": "", "id": "19"}, {"employee": "Amandeep Kaur", "date": "9/14/2026", "event": "Login", "time": "10:01:41 am", "minutes_vs_630am_shift_start": "211.7", "id": "20"}]}</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('lx-data').textContent);
+
+  // ---- live data layer: pull fresh rows from the Google Sheet each time this page loads ----
+  // The sheet is the one source of truth once populated: edit it (or paste a fresh WorkTime
+  // export into it) and this page shows the new numbers on next load/refresh — no rebuild needed.
+  // Falls back to the snapshot embedded above (DATA) for any tab that isn't reachable yet
+  // (sheet not shared as "Anyone with the link — Viewer" yet, offline, etc).
+  const SHEET_ID = '10c89SwrE9mZb59TJ9N5TW5DbcqOarWKLPHy9myuFOVU';
+  const GIDS = { employee_summary: 0, daily_activity: 1809409175, company_apps: 179095960, company_websites: 1626311508, login_events: 38715729 };
+  const sheetCsvUrl = (gid) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`;
+
+  async function loadLiveData() {
+    const keys = Object.keys(GIDS);
+    const results = await Promise.all(keys.map(async (key) => {
+      try {
+        const res = await fetch(sheetCsvUrl(GIDS[key]), { cache: 'no-store' });
+        if (!res.ok) throw new Error('http ' + res.status);
+        const text = await res.text();
+        const rows = d3.csvParse(text);
+        if (!rows || !rows.length) throw new Error('empty');
+        return { key, rows, live: true };
+      } catch (e) {
+        return { key, rows: DATA[key], live: false };
+      }
+    }));
+    results.forEach(({ key, rows }) => { DATA[key] = rows; });
+    const liveCount = results.filter(r => r.live).length;
+    return { liveCount, total: results.length };
+  }
+
+  const cs = getComputedStyle(document.documentElement);
+  const colors = [1,2,3,4,5,6,7,8].map(i => cs.getPropertyValue('--series-' + i).trim());
+
+  const fmtHrs = (min) => (Number(min) / 60).toFixed(1);
+  const fmtPct = (p) => Math.round(p) + '%';
+  const teamColor = (team) => team && team.startsWith('Nepo') ? colors[0] : colors[1];
+
+  let employeesOff = [];
+  let addPopOpen = false;
+  let addPopActiveIdx = -1;
+  const isOff = (emp) => employeesOff.includes(emp);
+  const toggleEmployee = (emp) => {
+    employeesOff = isOff(emp) ? employeesOff.filter(e => e !== emp) : [...employeesOff, emp];
+    renderAll();
+  };
+  const showEmployee = (emp) => {
+    employeesOff = employeesOff.filter(e => e !== emp);
+    addPopOpen = false;
+    renderAll();
+  };
+  const setAll = (show) => { employeesOff = show ? [] : DATA.employee_summary.map(r => r.employee); renderAll(); };
+
+  function drawFilterPills() {
+    const box = document.getElementById('lx-filters');
+    const employees = [...DATA.employee_summary].sort((a, b) => a.employee.localeCompare(b.employee));
+    const focusedSearchVal = addPopOpen ? (document.getElementById('lx-add-input')?.value ?? '') : '';
+    box.innerHTML = '';
+    const anyOff = employees.some(r => isOff(r.employee));
+    const allPill = document.createElement('span');
+    allPill.className = 'lx-pill lx-pill-all';
+    allPill.textContent = anyOff ? 'Show all' : 'Hide all';
+    allPill.addEventListener('click', () => setAll(anyOff));
+    box.appendChild(allPill);
+
+    // Only employees currently switched on get a pill; clicking one hides it entirely.
+    employees.forEach((r, i) => {
+      if (isOff(r.employee)) return;
+      const pill = document.createElement('span');
+      pill.className = 'lx-pill';
+      pill.innerHTML = `<span class="dot" style="background:${colors[i % colors.length]}"></span>${r.employee}`;
+      pill.title = 'Click to hide';
+      pill.addEventListener('click', () => toggleEmployee(r.employee));
+      box.appendChild(pill);
+    });
+
+    // "+" control to bring hidden employees back via a suggestive search box.
+    const hidden = employees.filter(r => isOff(r.employee));
+    const wrap = document.createElement('span');
+    wrap.className = 'lx-pill-add-wrap';
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'lx-pill-add';
+    addBtn.setAttribute('aria-label', 'Add employee back');
+    addBtn.textContent = '+';
+    if (!hidden.length) addBtn.disabled = true;
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addPopOpen = !addPopOpen;
+      addPopActiveIdx = -1;
+      drawFilterPills();
+    });
+    wrap.appendChild(addBtn);
+
+    if (addPopOpen && hidden.length) {
+      const pop = document.createElement('div');
+      pop.className = 'lx-add-pop';
+      pop.addEventListener('click', (e) => e.stopPropagation());
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'lx-add-input';
+      input.placeholder = 'Add employee…';
+      input.value = focusedSearchVal;
+      const list = document.createElement('ul');
+      list.className = 'lx-add-list';
+
+      const renderMatches = () => {
+        const q = input.value.trim().toLowerCase();
+        const matches = hidden.filter(r => r.employee.toLowerCase().includes(q));
+        list.innerHTML = '';
+        if (!matches.length) {
+          const empty = document.createElement('li');
+          empty.className = 'lx-add-empty';
+          empty.textContent = 'No matching hidden employees.';
+          list.appendChild(empty);
+          return;
+        }
+        matches.forEach((r, idx) => {
+          const empIdx = employees.findIndex(e => e.employee === r.employee);
+          const li = document.createElement('li');
+          li.className = idx === addPopActiveIdx ? 'active' : '';
+          li.innerHTML = `<span class="dot" style="background:${colors[empIdx % colors.length]}"></span>${r.employee}`;
+          li.addEventListener('click', () => showEmployee(r.employee));
+          list.appendChild(li);
+        });
+      };
+
+      input.addEventListener('input', () => { addPopActiveIdx = -1; renderMatches(); });
+      input.addEventListener('keydown', (e) => {
+        const q = input.value.trim().toLowerCase();
+        const matches = hidden.filter(r => r.employee.toLowerCase().includes(q));
+        if (e.key === 'ArrowDown') { e.preventDefault(); addPopActiveIdx = Math.min(addPopActiveIdx + 1, matches.length - 1); renderMatches(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); addPopActiveIdx = Math.max(addPopActiveIdx - 1, 0); renderMatches(); }
+        else if (e.key === 'Enter') {
+          e.preventDefault();
+          const pick = matches[addPopActiveIdx >= 0 ? addPopActiveIdx : 0];
+          if (pick) showEmployee(pick.employee);
+        } else if (e.key === 'Escape') { addPopOpen = false; drawFilterPills(); }
+      });
+
+      pop.appendChild(input);
+      pop.appendChild(list);
+      wrap.appendChild(pop);
+      renderMatches();
+      setTimeout(() => input.focus(), 0);
+    }
+
+    box.appendChild(wrap);
+  }
+
+  document.addEventListener('click', () => {
+    if (addPopOpen) { addPopOpen = false; drawFilterPills(); }
+  });
+
+  function visibleEmployeeRows() {
+    return DATA.employee_summary.filter(r => !isOff(r.employee));
+  }
+
+  function renderKpis() {
+    const rows = visibleEmployeeRows();
+    const el = document.getElementById('lx-takeaway');
+    const set = (field, val) => { document.querySelectorAll(`[data-field="${field}"]`).forEach(n => n.textContent = val); };
+    if (!rows.length) {
+      el.textContent = 'No employees selected — use the filters above to show someone.';
+      ['active_hours', 'avg_active_pct', 'overtime_hours', 'below_60_count', 'off_days_total'].forEach(f => set(f, '—'));
+      return;
+    }
+    const sum = (f) => rows.reduce((a, r) => a + Number(r[f] || 0), 0);
+    const avgPct = sum('active_pct') / rows.length;
+    set('active_hours', fmtHrs(sum('active_min')) + 'h');
+    set('avg_active_pct', fmtPct(avgPct));
+    set('overtime_hours', fmtHrs(sum('overtime_min')) + 'h');
+    set('below_60_count', rows.filter(r => Number(r.active_pct) < 60).length);
+    set('off_days_total', sum('off_days'));
+    document.getElementById('lx-kpi-active-sub').textContent = `across ${rows.length} people`;
+    const top = [...rows].sort((a, b) => Number(b.active_pct) - Number(a.active_pct))[0];
+    const bottom = [...rows].sort((a, b) => Number(a.active_pct) - Number(b.active_pct))[0];
+    el.textContent = rows.length > 1
+      ? `Last 2 weeks: ${top.employee} led at ${fmtPct(top.active_pct)} active, ${bottom.employee} trailed at ${fmtPct(bottom.active_pct)} — shown group averaged ${fmtPct(avgPct)}.`
+      : `${top.employee}: ${fmtPct(top.active_pct)} active over the last 2 weeks.`;
+  }
+
+  function renderEmpTable() {
+    const tbody = document.querySelector('#lx-emp-table tbody');
+    const rows = [...visibleEmployeeRows()].sort((a, b) => Number(b.active_pct) - Number(a.active_pct));
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      const pct = Number(r.active_pct);
+      const barColor = pct >= 75 ? 'var(--color-ok)' : pct >= 55 ? 'var(--color-warn)' : 'var(--color-bad)';
+      tr.innerHTML = `
+        <td>${r.employee}</td>
+        <td><span class="lx-badge">${r.team}</span></td>
+        <td>${fmtHrs(r.active_min)}h</td>
+        <td>${fmtHrs(r.idle_min)}h</td>
+        <td><div class="lx-bar-wrap"><div class="lx-bar-track"><div class="lx-bar-fill" style="width:${Math.min(pct,100)}%; background:${barColor};"></div></div><span>${fmtPct(pct)}</span></div></td>
+        <td>${Number(r.overtime_min) > 0 ? fmtHrs(r.overtime_min) + 'h' : '—'}</td>
+        <td>${r.off_days}</td>`;
+      tbody.appendChild(tr);
+    });
+    if (!rows.length) tbody.innerHTML = `<tr><td colspan="7" style="color:var(--color-fg-muted);">No employees selected.</td></tr>`;
+  }
+
+  function drawTeamChart() {
+    const box = document.getElementById('lx-team-chart');
+    const visible = visibleEmployeeRows();
+    box.innerHTML = '';
+    if (!visible.length) {
+      box.innerHTML = `<p style="color:var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin:0;">No employees selected.</p>`;
+      return;
+    }
+    const byTeam = new Map();
+    visible.forEach(r => {
+      const t = byTeam.get(r.team) || { team: r.team, active_sum: 0, idle_sum: 0, headcount: 0 };
+      t.active_sum += Number(r.active_min || 0);
+      t.idle_sum += Number(r.idle_min || 0);
+      t.headcount += 1;
+      byTeam.set(r.team, t);
+    });
+    const rows = [...byTeam.values()].map(t => ({
+      team: t.team,
+      headcount: t.headcount,
+      avg_active_pct: (t.active_sum + t.idle_sum) ? Math.round((t.active_sum / (t.active_sum + t.idle_sum)) * 1000) / 10 : 0,
+    }));
+    const width = box.clientWidth || 320, height = 200, margin = { top: 10, right: 16, bottom: 28, left: 40 };
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleBand().domain(rows.map(r => r.team)).range([margin.left, width - margin.right]).padding(0.35);
+    const y = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+    svg.append('g').attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x).tickSizeOuter(0))
+      .call(g => g.selectAll('text').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').call(wrapTick))
+      .call(g => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'))
+      .call(g => g.selectAll('line').attr('stroke', 'var(--cds-chart-axis)'));
+    svg.append('g').attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(4).tickFormat(v => v + '%').tickSizeOuter(0))
+      .call(g => g.selectAll('text').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)'))
+      .call(g => g.select('.domain').remove())
+      .call(g => g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'));
+    svg.selectAll('rect.bar').data(rows).join('rect')
+      .attr('class', 'bar')
+      .attr('x', r => x(r.team)).attr('width', x.bandwidth())
+      .attr('y', r => y(r.avg_active_pct)).attr('height', r => y(0) - y(r.avg_active_pct))
+      .attr('rx', 4)
+      .attr('fill', r => teamColor(r.team));
+    svg.selectAll('text.val').data(rows).join('text')
+      .attr('class', 'val')
+      .attr('x', r => x(r.team) + x.bandwidth() / 2).attr('y', r => y(r.avg_active_pct) - 6)
+      .attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', 'var(--color-fg)')
+      .text(r => fmtPct(r.avg_active_pct) + ` (n=${r.headcount})`);
+
+    function wrapTick(selection) {
+      selection.each(function () {
+        const text = d3.select(this);
+        const words = text.text().split(/\s+/);
+        text.text(null);
+        let line = [];
+        const ts = [];
+        words.forEach(word => {
+          line.push(word);
+          if (line.join(' ').length > 14) { ts.push(line.slice(0, -1).join(' ')); line = [word]; }
+        });
+        ts.push(line.join(' '));
+        ts.forEach((t, i) => text.append('tspan').attr('x', 0).attr('dy', i === 0 ? 0 : 12).text(t));
+      });
+    }
+  }
+
+  function drawTrendChart() {
+    const box = document.getElementById('lx-trend-chart');
+    const legend = document.getElementById('lx-trend-legend');
+    box.innerHTML = '';
+    const rows = DATA.daily_activity.filter(r => !isOff(r.employee)).map(r => ({ ...r }));
+    if (!rows.length) {
+      box.innerHTML = `<p style="color:var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin:0;">No employees selected.</p>`;
+      legend.innerHTML = '';
+      return;
+    }
+    rows.forEach(r => {
+      const [m, da, y] = r.date.split('/');
+      r.dt = new Date(Date.UTC(+y, +m - 1, +da));
+    });
+    const employees = [...new Set(rows.map(r => r.employee))];
+    const width = box.clientWidth || 600, height = 220, margin = { top: 10, right: 12, bottom: 24, left: 36 };
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+    const x = d3.scaleUtc().domain(d3.extent(rows, r => r.dt)).range([margin.left, width - margin.right]);
+    const y = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+    svg.append('g').attr('transform', `translate(0,${height - margin.bottom})`)
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d3.utcFormat('%b %-d')).tickSizeOuter(0))
+      .call(g => g.selectAll('text').attr('font-size', 10).attr('fill', 'var(--color-fg-muted)'))
+      .call(g => g.select('.domain').attr('stroke', 'var(--cds-chart-axis)'))
+      .call(g => g.selectAll('line').attr('stroke', 'var(--cds-chart-axis)'));
+    svg.append('g').attr('transform', `translate(${margin.left},0)`)
+      .call(d3.axisLeft(y).ticks(4).tickFormat(v => v + '%').tickSizeOuter(0))
+      .call(g => g.selectAll('text').attr('font-size', 10).attr('fill', 'var(--color-fg-muted)'))
+      .call(g => g.select('.domain').remove())
+      .call(g => g.selectAll('line').attr('stroke', 'var(--cds-chart-grid)'));
+    const line = d3.line().x(r => x(r.dt)).y(r => y(+r.active_pct));
+    legend.innerHTML = '';
+    employees.forEach((emp, i) => {
+      const series = rows.filter(r => r.employee === emp).sort((a, b) => a.dt - b.dt);
+      const color = colors[i % colors.length];
+      svg.append('path').datum(series).attr('fill', 'none').attr('stroke', color)
+        .attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
+        .attr('d', line);
+      const sp = document.createElement('span');
+      sp.innerHTML = `<span class="sw" style="background:${color}"></span>${emp}`;
+      legend.appendChild(sp);
+    });
+  }
+
+  function renderLoginTable() {
+    const tbody = document.querySelector('#lx-login-table tbody');
+    tbody.innerHTML = '';
+    DATA.login_events.forEach(r => {
+      const tr = document.createElement('tr');
+      const mins = r.minutes_vs_630am_shift_start;
+      let tag = '—';
+      if (r.event === 'Login' && mins !== '' && mins !== undefined) {
+        const m = Number(mins);
+        tag = `${Math.round(m)}m ${m <= 5 ? 'on time' : 'late'}`;
+      }
+      tr.innerHTML = `<td>${r.date}</td><td>${r.event}</td><td>${r.time}</td><td>${tag}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function drawBarList(rows, boxId, fieldName) {
+    const box = document.getElementById(boxId);
+    box.innerHTML = '';
+    const sorted = [...rows].sort((a, b) => Number(b.active_min) - Number(a.active_min)).slice(0, 6);
+    const max = d3.max(sorted, r => Number(r.active_min)) || 1;
+    const list = document.createElement('div');
+    list.style.display = 'flex'; list.style.flexDirection = 'column'; list.style.gap = '8px';
+    sorted.forEach(r => {
+      const pct = Number(r.active_min) / max * 100;
+      const row = document.createElement('div');
+      row.innerHTML = `<div style="display:flex; justify-content:space-between; font-size: var(--cds-font-size-caption); margin-bottom:2px;">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:8.5rem;">${r[fieldName]}</span>
+          <span style="color:var(--color-fg-muted);">${fmtHrs(r.active_min)}h</span>
+        </div>
+        <div class="lx-bar-track"><div class="lx-bar-fill" style="width:${pct}%; background:${colors[2]};"></div></div>`;
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+  }
+
+  function renderAll() {
+    drawFilterPills();
+    renderKpis();
+    renderEmpTable();
+    drawTeamChart();
+    drawTrendChart();
+  }
+
+  const stamp = document.getElementById('lx-updated');
+  const now = new Date();
+  const fmtStamp = now.toLocaleString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  function renderEverything() {
+    renderAll();
+    renderLoginTable();
+    drawBarList(DATA.company_apps, 'lx-apps-chart', 'app');
+    drawBarList(DATA.company_websites, 'lx-sites-chart', 'website');
+  }
+
+  // first paint from the embedded snapshot so the page is never blank while the sheet loads
+  renderEverything();
+
+  loadLiveData().then(({ liveCount, total }) => {
+    if (liveCount === total) {
+      stamp.innerHTML = `Live from Google Sheet<br>Refreshed ${fmtStamp}`;
+    } else if (liveCount > 0) {
+      stamp.innerHTML = `Partially live (${liveCount}/${total} tabs)<br>Rest from snapshot, 27 Oct 2026`;
+    } else {
+      stamp.innerHTML = `Snapshot as of 27 Oct 2026<br>Sheet not reachable — see footer`;
+    }
+    renderEverything();
+  });
+
+  window.addEventListener('resize', () => { drawTeamChart(); drawTrendChart(); });
+})();
+</script>
+</body>
+</html>
