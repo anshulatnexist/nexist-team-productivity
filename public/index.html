@@ -231,9 +231,9 @@
 </div>
 
 <div class="lx-card lx-foot">
-  <p style="margin:0 0 6px;"><strong>Where this data comes from.</strong> WorkTime (cloud.worktime.com) doesn't offer a public API on Nexist's current "Basic" plan — only on-screen reports and CSV/HTML/PDF exports. These numbers were pulled from WorkTime's Attendance, Internet and App/doc reports via a signed-in browser session on 27 Oct 2026.</p>
+  <p style="margin:0 0 6px;"><strong>Where this data comes from.</strong> Nexist is on WorkTime's Premium plan. WorkTime doesn't expose a working public API (the account's API key consistently returns an "Invalid JWT Token" error, a known WorkTime-side bug) — so these numbers were pulled from WorkTime's Attendance, Internet and App/doc reports via a signed-in browser session on 27 Oct 2026, and are kept current by WorkTime's own scheduled report emails.</p>
   <p style="margin:0 0 6px;"><strong>How this page stays current.</strong> On every load, this page tries to pull fresh rows from a <a href="https://docs.google.com/spreadsheets/d/10c89SwrE9mZb59TJ9N5TW5DbcqOarWKLPHy9myuFOVU/edit" target="_blank" rel="noopener">Google Sheet</a> — so updating the Sheet (pasting in a new WorkTime export) updates nexist.cloud with no re-upload needed. The badge at the top says whether it loaded live or fell back to the snapshot baked into this file on 27 Oct 2026. If it's stuck on the snapshot, check that the Sheet is still shared as "Anyone with the link — Viewer."</p>
-  <p style="margin:0;"><strong>Note on "productivity".</strong> The Basic plan doesn't include WorkTime's app/site productivity categorisation, so there's no vendor-classified "productive vs. unproductive" score here. Active % (time actively at the keyboard/mouse vs. idle) is used as the closest available proxy — upgrading the WorkTime plan would unlock true productivity scoring if that's wanted later.</p>
+  <p style="margin:0;"><strong>Note on "productivity".</strong> Active % (time actively at the keyboard/mouse vs. idle) is used here as the productivity proxy. WorkTime's Premium plan does include real Productive/Unproductive/Undefined app-and-website categorisation (visible under its own Productivity reports) and it's already populated for Nexist's account — that real productivity score isn't wired into this dashboard yet, just Active %.</p>
 </div>
 
 </div>
