@@ -207,16 +207,17 @@
     </div>
   </div>
   <div class="lx-card">
-    <h3>Punctuality sample — Amandeep Kaur</h3>
-    <p class="lx-note">Login times vs. the Nepo Team India 6:30am IST shift start, Sept 2026. One employee only — a full export covers everyone.</p>
-    <div style="overflow-x:auto; max-height: 240px; overflow-y:auto;">
-    <table class="lx-table" id="lx-login-table">
+    <h3>Punctuality score — by employee</h3>
+    <p class="lx-note">Login time vs. the Nepo Team India 6:30am IST shift start (strictly enforced per their Workplace Policy). On-time = within 5 minutes of shift start. Nexist AU / Tech &amp; Ops employees don't work that fixed shift, so no score is shown for them.</p>
+    <div style="overflow-x:auto;">
+    <table class="lx-table" id="lx-punctuality-table">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Event</th>
-          <th>Time</th>
-          <th>vs. 6:30am</th>
+          <th>Employee</th>
+          <th>Team</th>
+          <th>Logins recorded</th>
+          <th>On-time rate</th>
+          <th>Avg vs. 6:30am</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -565,18 +566,52 @@
     });
   }
 
-  function renderLoginTable() {
-    const tbody = document.querySelector('#lx-login-table tbody');
+  // Punctuality is only meaningful for Nepo Team (India), the one team with a fixed,
+  // strictly-enforced shift start (6:30am IST). AU/Tech & Ops employees have no such
+  // shift, so they get "No fixed shift start recorded" instead of a score.
+  function punctualityStats(emp) {
+    const logins = DATA.login_events.filter(r =>
+      r.employee === emp && r.event === 'Login' &&
+      r.minutes_vs_630am_shift_start !== '' && r.minutes_vs_630am_shift_start !== undefined && r.minutes_vs_630am_shift_start !== null
+    );
+    const mins = logins.map(r => Number(r.minutes_vs_630am_shift_start)).filter(m => !Number.isNaN(m));
+    if (!mins.length) return null;
+    const onTime = mins.filter(m => m <= 5).length;
+    const avgMins = mins.reduce((a, b) => a + b, 0) / mins.length;
+    return { count: mins.length, onTimePct: Math.round(100 * onTime / mins.length), avgMins };
+  }
+
+  function renderPunctualityTable() {
+    const tbody = document.querySelector('#lx-punctuality-table tbody');
+    const rows = visibleEmployeeRows();
     tbody.innerHTML = '';
-    DATA.login_events.forEach(r => {
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--color-fg-muted);">No employees selected.</td></tr>`;
+      return;
+    }
+    const scored = rows.map(r => ({ r, stats: (r.team || '').startsWith('Nepo') ? punctualityStats(r.employee) : null }));
+    scored.sort((a, b) => {
+      if (a.stats && b.stats) return b.stats.onTimePct - a.stats.onTimePct;
+      if (a.stats) return -1;
+      if (b.stats) return 1;
+      return a.r.employee.localeCompare(b.r.employee);
+    });
+    scored.forEach(({ r, stats }) => {
       const tr = document.createElement('tr');
-      const mins = r.minutes_vs_630am_shift_start;
-      let tag = '—';
-      if (r.event === 'Login' && mins !== '' && mins !== undefined) {
-        const m = Number(mins);
-        tag = `${Math.round(m)}m ${m <= 5 ? 'on time' : 'late'}`;
+      if (!stats) {
+        tr.innerHTML = `<td>${r.employee}</td><td><span class="lx-badge">${r.team}</span></td><td colspan="3" style="color:var(--color-fg-muted);">No fixed shift start recorded</td>`;
+      } else {
+        const pct = stats.onTimePct;
+        const barColor = pct >= 90 ? 'var(--color-ok)' : pct >= 70 ? 'var(--color-warn)' : 'var(--color-bad)';
+        const rounded = Math.round(Math.abs(stats.avgMins));
+        const avgLabel = stats.avgMins <= 0 ? `${rounded}m early (avg)` : `${rounded}m late (avg)`;
+        tr.innerHTML = `
+          <td>${r.employee}</td>
+          <td><span class="lx-badge">${r.team}</span></td>
+          <td>${stats.count}</td>
+          <td><div class="lx-bar-wrap"><div class="lx-bar-track"><div class="lx-bar-fill" style="width:${Math.min(pct,100)}%; background:${barColor};"></div></div><span>${pct}%</span></div></td>
+          <td>${avgLabel}</td>`;
       }
-      tr.innerHTML = `<td>${r.date}</td><td>${r.event}</td><td>${r.time}</td><td>${tag}</td>`;
       tbody.appendChild(tr);
     });
   }
@@ -607,6 +642,7 @@
     renderEmpTable();
     drawTeamChart();
     drawTrendChart();
+    renderPunctualityTable();
   }
 
   const stamp = document.getElementById('lx-updated');
@@ -615,7 +651,6 @@
 
   function renderEverything() {
     renderAll();
-    renderLoginTable();
     drawBarList(DATA.company_apps, 'lx-apps-chart', 'app');
     drawBarList(DATA.company_websites, 'lx-sites-chart', 'website');
   }
