@@ -273,20 +273,40 @@
   const fmtPct = (p) => Math.round(p) + '%';
   const teamColor = (team) => team && team.startsWith('Nepo') ? colors[0] : colors[1];
 
-  let employeesOff = [];
+  // Hidden-employee state persists in localStorage (not just browser cache) so a reload,
+  // a new tab, or coming back tomorrow keeps whoever you hid hidden, until you add them back.
+  const HIDDEN_KEY = 'nexist-team-productivity:hidden-employees';
+  const loadHiddenState = () => {
+    try {
+      const raw = localStorage.getItem(HIDDEN_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter(v => typeof v === 'string') : [];
+    } catch (e) { return []; }
+  };
+  const saveHiddenState = (list) => {
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable (private mode, quota, etc.) — state just won't persist */ }
+  };
+
+  let employeesOff = loadHiddenState();
   let addPopOpen = false;
   let addPopActiveIdx = -1;
   const isOff = (emp) => employeesOff.includes(emp);
   const toggleEmployee = (emp) => {
     employeesOff = isOff(emp) ? employeesOff.filter(e => e !== emp) : [...employeesOff, emp];
+    saveHiddenState(employeesOff);
     renderAll();
   };
   const showEmployee = (emp) => {
     employeesOff = employeesOff.filter(e => e !== emp);
     addPopOpen = false;
+    saveHiddenState(employeesOff);
     renderAll();
   };
-  const setAll = (show) => { employeesOff = show ? [] : DATA.employee_summary.map(r => r.employee); renderAll(); };
+  const setAll = (show) => {
+    employeesOff = show ? [] : DATA.employee_summary.map(r => r.employee);
+    saveHiddenState(employeesOff);
+    renderAll();
+  };
 
   function drawFilterPills() {
     const box = document.getElementById('lx-filters');
