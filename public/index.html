@@ -213,7 +213,7 @@
   </div>
   <div class="lx-card">
     <h3>Punctuality score — by employee</h3>
-    <p class="lx-note">Login time vs. the 6:30am IST shift start, strictly enforced for employees whose office is The Nepo Team (Noida). On-time = within 5 minutes of shift start. Employees in other offices (HQ (AUS), Remote (IND), Remote (AU)) don't work that fixed shift, so no score is shown for them.</p>
+    <p class="lx-note">First login time vs. the 6:30am IST shift start, strictly enforced for employees whose office is The Nepo Team (Noida). Only the earliest login of each day counts, so later re-logins (restarts, VPN drops, lunch breaks) don't skew the score. On-time = within 5 minutes of shift start. Employees in other offices (HQ (AUS), Remote (IND), Remote (AU)) don't work that fixed shift, so no score is shown for them.</p>
     <div style="overflow-x:auto;">
     <table class="lx-table" id="lx-punctuality-table">
       <thead>
@@ -605,11 +605,24 @@
     return fvid ? `${base}&fvid=${fvid}` : base;
   }
   function punctualityStats(emp) {
-    const logins = DATA.login_events.filter(r =>
-      r.employee === emp && r.event === 'Login' &&
-      r.minutes_vs_630am_shift_start !== '' && r.minutes_vs_630am_shift_start !== undefined && r.minutes_vs_630am_shift_start !== null
-    );
-    const mins = logins.map(r => Number(r.minutes_vs_630am_shift_start)).filter(m => !Number.isNaN(m));
+    // Multiple Login events can happen on the same calendar day - a VPN drop, a computer
+    // restart, the monitoring agent reconnecting, or a genuine lunch-break logout/login.
+    // If every login row were counted as its own data point, a single mid-afternoon
+    // reconnect would show up as "211 minutes late", dragging down both the on-time rate
+    // and the average lateness even though the employee actually started on time that day.
+    // So punctuality is scored once per day, using only that day's EARLIEST login - later
+    // re-logins the same day are ignored entirely for this metric (they still count
+    // normally in active/idle time, just not here).
+    const earliestPerDay = new Map();
+    DATA.login_events.forEach(r => {
+      if (r.employee !== emp || r.event !== 'Login') return;
+      if (r.minutes_vs_630am_shift_start === '' || r.minutes_vs_630am_shift_start === undefined || r.minutes_vs_630am_shift_start === null) return;
+      const m = Number(r.minutes_vs_630am_shift_start);
+      if (Number.isNaN(m)) return;
+      const prev = earliestPerDay.get(r.date);
+      if (prev === undefined || m < prev) earliestPerDay.set(r.date, m);
+    });
+    const mins = [...earliestPerDay.values()];
     if (!mins.length) return null;
     const onTime = mins.filter(m => m <= 5).length;
     const avgMins = mins.reduce((a, b) => a + b, 0) / mins.length;
