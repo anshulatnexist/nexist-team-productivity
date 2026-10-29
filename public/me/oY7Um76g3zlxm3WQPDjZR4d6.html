@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Productivity — Seelan Govender</title>
+<link rel="icon" type="image/png" href="https://framerusercontent.com/images/fZ5U7ZV7h6xZxdvwXxecwNhfEp0.png">
+<link rel="apple-touch-icon" href="https://framerusercontent.com/images/fZ5U7ZV7h6xZxdvwXxecwNhfEp0.png">
+<style>
+  :root {
+    color-scheme: light;
+    --color-bg: #f9f9f7; --color-panel: #fcfcfb; --color-fg: #0b0b0b; --color-fg-muted: #52514e;
+    --color-border-line: rgba(11,11,11,0.10); --color-ok: #0ca30c; --color-warn: #fab219; --color-bad: #d03b3b;
+    --cds-radius: 0.75rem;
+    --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-anthropic-serif: ui-serif, Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-bg: #0d0d0d; --color-panel: #1a1a19; --color-fg: #f0efec; --color-fg-muted: #c3c2b7;
+      --color-border-line: rgba(255,255,255,0.10); --color-bad: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); }
+  #root { max-width: 44rem; margin: 0 auto; padding: clamp(16px, 4vw, 32px); }
+  h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 1.75rem; margin: 0 0 4px; }
+  .sub { color: var(--color-fg-muted); font-size: 0.875rem; margin: 0 0 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 18px; }
+  .kpi-label { font-size: 0.75rem; color: var(--color-fg-muted); margin: 0 0 6px; }
+  .kpi-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: 1.75rem; font-variant-numeric: tabular-nums; }
+  .bar-track { height: 6px; border-radius: 999px; background: var(--color-bg); overflow: hidden; margin-top: 8px; }
+  .bar-fill { height: 100%; border-radius: 999px; }
+  .note { color: var(--color-fg-muted); font-size: 0.8rem; line-height: 1.6; }
+  .foot { margin-top: 24px; font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="root">
+  <h1>Hi Seelan, here's your productivity snapshot</h1>
+  <p class="sub">This is private to you — only you and your manager can see this page. Window: last 2 weeks, generated 29 Oct 2026.</p>
+
+  <div class="kpis">
+    <div class="card">
+      <p class="kpi-label">Active time</p>
+      <div class="kpi-value">90.5h</div>
+    </div>
+    <div class="card">
+      <p class="kpi-label">Active %</p>
+      <div class="kpi-value">79%</div>
+      <div class="bar-track"><div class="bar-fill" style="width:79.3%; background:var(--color-ok);"></div></div>
+    </div>
+    <div class="card">
+      <p class="kpi-label">Idle time</p>
+      <div class="kpi-value">23.6h</div>
+    </div>
+    <div class="card">
+      <p class="kpi-label">Off days</p>
+      <div class="kpi-value">4</div>
+    </div>
+  </div>
+
+  
+  <div class="card" style="margin-bottom:20px;">
+    <p class="note" style="margin:0;">You're not on a fixed shift-start schedule, so no punctuality score applies to you.</p>
+  </div>
+
+
+  <p class="note">Active % is time actively at the keyboard/mouse vs. idle, out of the time you were monitored — not a fixed shift length, so it doesn't penalise flexible or shorter days.</p>
+
+  <div class="foot">
+    <p>Questions about any of this, or think something looks off? Just raise it with Ansh directly — this is meant to keep you in the loop, not to catch anything.</p>
+  </div>
+</div>
+</body>
+</html>
